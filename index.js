@@ -57,7 +57,19 @@ function watch(globs, opts, cb) {
 
 		return mod + slash(resolveFilepath(glob));
 	}
-	globs = globs.map(resolveGlob);
+	// MAW The map calling resolveGlob seems to get caught up repeating, results an undefined glob, and throws an error in resolveFilepath.
+  //     The exact same code works fine as an inline function!
+  //globs = globs.map(resolveGlob);
+	globs = globs.map((glob) => {
+		var mod = '';
+
+		if (glob[0] === '!') {
+			mod = glob[0];
+			glob = glob.slice(1);
+		}
+
+		return mod + slash(resolveFilepath(glob));
+	});
 
 	var baseForced = Boolean(opts.base);
 	var outputStream = new Duplex({objectMode: true, allowHalfOpen: true});
@@ -94,6 +106,10 @@ function watch(globs, opts, cb) {
 	};
 
 	function processEvent(event, filepath) {
+		// MAW Seems to also receive filepath as undefined and then throws error in resolveFilepath, so bail out if it's undefined.
+	  if (filepath === undefined) {
+	    return;
+	  }
 		filepath = resolveFilepath(filepath);
 		var fileOpts = assign({}, opts);
 
